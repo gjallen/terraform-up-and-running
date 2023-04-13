@@ -2,6 +2,17 @@ provider "aws" {
   region = "us-east-2"
 }
 
+variable "server_port" {
+  description = "The port the server will use for HTTP requests"
+  type = number
+  default = 8080
+}
+
+output "public_ip" {
+  value = aws_instance.example.public_ip
+  description = "The public of IP address of the web server"  
+}
+
 resource "aws_instance" "example" {
   ami           = "ami-0fb653ca2d3203ac1"
   instance_type = "t2.micro"
@@ -9,12 +20,11 @@ resource "aws_instance" "example" {
   # '.id' is an exported attribute of the aws_security_group
   # resource. We could use an argument from that resource 
   # instead if we wanted, e.g. '.name'
-   
 
   user_data = <<-EOF
               #!/bin/bash
               echo "Hello, World" > index.html
-              nohup busybox httpd -f -p 8080 &
+              nohup busybox httpd -f -p ${var.server_port} &
               EOF
   
   user_data_replace_on_change = true
@@ -29,8 +39,8 @@ resource "aws_security_group" "webtraffic" {
 
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
-    from_port = 8080
-    to_port = 8080
+    from_port = var.server_port
+    to_port = var.server_port
     protocol = "tcp"
   }
 }
